@@ -24,15 +24,15 @@ def main(args):
     os.makedirs(img_dir)
 
   mnist = utils.read_data_sets(args.train_dir)
-  # summary_writer = tf.summary.FileWriter(log_dir)
+  summary_writer = tf.summary.FileWriter(log_dir)
   config_proto = utils.get_config_proto()
 
   sess = tf.Session(config=config_proto)
-  model = AVB(args, sess, name="dcvae")
+  model = AVB(args, sess, name="avb")
 
   total_batch = mnist.train.num_examples // args.batch_size
 
-  for epoch in range(1, args.nb_epochs + 1):
+  for epoch in range(1, args.nb_epoch + 1):
     print "Epoch %d start with learning rate %f" % (epoch, model.learning_rate.eval(sess))
     print "- " * 50
     epoch_start_time = time.time()
@@ -41,11 +41,15 @@ def main(args):
       global_step = sess.run(model.global_step)
       x_batch, y_batch = mnist.train.next_batch(args.batch_size)
 
-      _, vae_loss = model.train_vae(x_batch, noise)
-      _, adv_loss = model.train_adv(noise)
+      _, vae_loss, rec_loss, global_step, summaries = model.train_vae(x_batch)
+      summary_writer.add_summary(summaries, global_step)
+      _, adv_loss, global_step, summaries = model.train_adv(x_batch)
+      summary_writer.add_summary(summaries, global_step)
 
       if i % args.print_step == 0:
-        print "epoch %d, batch %d, vae_loss %d, adv_loss %d" % (epoch, i, vae_loss, adv_loss)
+        print "epoch %d, step %d, vae_loss %f, rec_loss %f, adv_loss %f, time %.2fs" \
+            % (epoch, global_step, vae_loss, rec_loss, adv_loss, time.time()-step_start_time)
+        step_start_time = time.time()
 
     if epoch % 50 == 0:
       print "- " * 5
@@ -54,7 +58,7 @@ def main(args):
       sess.run(model.learning_rate_decay_op)
 
     if epoch % args.save_epoch == 0:
-      # z = np.random.normal(size=[100, args.latent_dim])
+      z = np.random.normal(size=[100, args.latent_dim])
       gen_images = np.reshape(model.generate(z, 100), (100, 28, 28, 1))
       utils.save_images(gen_images, [10, 10], os.path.join(img_dir, "sample%s.jpg" % epoch))
 
