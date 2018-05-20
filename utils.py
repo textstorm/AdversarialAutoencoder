@@ -14,7 +14,7 @@ def _read32(bytestream):
   return np.frombuffer(bytestream.read(4), dtype=dt)[0]
 
 def extract_images(f):
-  print('Extracting', f.name)
+  print 'Extracting', f.name
   with gzip.GzipFile(fileobj=f) as bytestream:
     magic = _read32(bytestream)
     if magic != 2051:
@@ -36,7 +36,7 @@ def dense_to_one_hot(labels_dense, num_classes):
   return labels_one_hot
 
 def extract_labels(f, one_hot=False, num_classes=10):
-  print('Extracting', f.name)
+  print 'Extracting', f.name
   with gzip.GzipFile(fileobj=f) as bytestream:
     magic = _read32(bytestream)
     if magic != 2049:
